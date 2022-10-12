@@ -1,0 +1,42 @@
+---
+- name: Add APT repository
+  apt_repository:
+    repo: deb http://repo.yandex.ru/clickhouse/deb/stable/ main/
+    state: present
+    update_cache: true
+    filename: clickhouse
+
+- name: Add APT key
+  apt_key:
+    url: http://repo.yandex.ru/clickhouse/CLICKHOUSE-KEY.GPG
+    id: E0C56BD4
+
+- name: Install dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - apt-transport-https
+    - ca-certificates
+    - dirmngr
+    - clickhouse-client
+    - clickhouse-server
+
+- name: Add IP addresses from inventory to /etc/hosts
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '.*{{ item }}$'
+    line: "{{ hostvars[item].ansible_host }} {{item}}"
+    state: present
+  when: hostvars[item].ansible_host is defined
+  with_items: "{{ groups.all }}"
+
+- name: Add config for clickhouse
+  template:
+    src: "config.xml.j2"
+    dest: /etc/clickhouse-server/config.xml
+    owner: root
+    group: root
+    mode: '0644'
+  notify: reload clickhouse

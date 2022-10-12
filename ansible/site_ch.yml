@@ -1,0 +1,7 @@
+---
+- name: Configure CH
+  hosts: clickhouse
+  become: true
+
+  roles:
+    - clickhouse

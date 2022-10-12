@@ -1,0 +1,8 @@
+---
+- name: reload clickhouse
+  systemd:
+    name: clickhouse-server
+    daemon_reload: yes
+    enabled: yes
+    state: reloaded
+  ignore_errors: "{{ ansible_check_mode }}"

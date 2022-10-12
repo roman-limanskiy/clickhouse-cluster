@@ -1,0 +1,2 @@
+{%- set host_id = groups['zookeeper'].index(inventory_hostname) + 1 %}
+{{ host_id }}

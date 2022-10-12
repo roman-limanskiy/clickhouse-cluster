@@ -1,0 +1,7 @@
+---
+- name: Configure ZK
+  hosts: zookeeper
+  become: true
+
+  roles:
+  - zookeeper

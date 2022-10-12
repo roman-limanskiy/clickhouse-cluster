@@ -1,0 +1,94 @@
+{% set host = groups['clickhouse'].index(inventory_hostname) + 1 %}
+{% if host % 2 == 1 %}
+{%   set shard_value = '01' %}
+{% elif host % 2 == 0 %}
+{%   set shard_value = '02' %}
+{% endif %}
+<?xml version="1.0"?>
+<yandex>
+
+    <logger>
+        <level>trace</level>
+        <log>/var/log/clickhouse-server/clickhouse-server.log</log>
+        <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+        <size>1000M</size>
+        <count>10</count>
+    </logger>
+
+    <http_port>8123</http_port>
+    <tcp_port>9000</tcp_port>
+
+    <listen_host>0.0.0.0</listen_host>
+
+    <interserver_http_port>9009</interserver_http_port>
+
+    <max_connections>100</max_connections>
+    <keep_alive_timeout>3</keep_alive_timeout>
+
+    <max_concurrent_queries>50</max_concurrent_queries>
+
+    <mark_cache_size>5368709120</mark_cache_size>
+
+    <path>/var/lib/clickhouse/</path>
+    <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
+    <user_files_path>/var/lib/clickhouse/user_files/</user_files_path>
+    <users_config>users.xml</users_config>
+    <access_control_path>/var/lib/clickhouse/access/</access_control_path>
+    <default_profile>default</default_profile>
+    <default_database>default</default_database>
+
+    <distributed_ddl>
+        <path>/clickhouse/task_queue/ddl</path>
+    </distributed_ddl>
+
+    <remote_servers>
+        <cluster_1>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <weight>1</weight>
+                <replica>
+                    <host>{{ groups['clickhouse'][0] }}</host>
+                    <port>9000</port>
+                </replica>
+                <replica>
+                    <host>{{ groups['clickhouse'][2] }}</host>
+                    <port>9000</port>
+                </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <weight>1</weight>
+                <replica>
+                    <host>{{ groups['clickhouse'][1] }}</host>
+                    <port>9000</port>
+                </replica>
+                <replica>
+                    <host>{{ groups['clickhouse'][3] }}</host>
+                    <port>9000</port>
+                </replica>
+            </shard>
+        </cluster_1>
+    </remote_servers>
+
+    <zookeeper>
+        <node>
+                <host>{{ groups['zookeeper'][0] }}</host>
+                <port>2181</port>
+        </node>
+        <node>
+                <host>{{ groups['zookeeper'][1] }}</host>
+                <port>2181</port>
+        </node>
+        <node>
+                <host>{{ groups['zookeeper'][2] }}</host>
+                <port>2181</port>
+        </node>
+    </zookeeper>
+
+    <macros>
+        <replica>{{ ansible_limit }}</replica>
+        <shard>{{ shard_value }}</shard>
+    </macros>
+
+<dictionaries_config>*/*_dictionary.xml</dictionaries_config>
+</yandex>

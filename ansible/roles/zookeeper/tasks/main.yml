@@ -1,0 +1,98 @@
+---
+- name: Install dependencies
+  apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  with_items:
+    - chrony
+    - default-jre
+    - ca-certificates
+    - wget
+    - tar
+
+- name: Enable chrony
+  systemd:
+    name: chrony
+    enabled: yes
+
+- name: Add zookeeper group
+  group:
+    name: zookeeper
+    state: present
+    gid: 1040
+
+- name: Add zookeeper user
+  user:
+    name: zookeeper
+    group: zookeeper
+    system: yes
+    create_home: no
+    comment: Zookeeper service
+    uid: 1040
+
+- name: Create directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+    owner: zookeeper
+    group: zookeeper
+    mode: '0755'
+  loop:
+    - /opt/zookeeper/
+    - /opt/zookeeper/data/
+    - /var/log/zookeeper/
+
+- name: Download zookeeper
+  get_url:
+    url: https://dlcdn.apache.org/zookeeper/zookeeper-3.7.1/apache-zookeeper-3.7.1-bin.tar.gz
+    dest: /tmp/apache-zookeeper-3.7.1-bin.tar.gz
+
+- name: Extract zookeeper
+  unarchive:
+    src: /tmp/apache-zookeeper-3.7.1-bin.tar.gz
+    dest: /opt/zookeeper
+    remote_src: yes
+    owner: zookeeper
+    group: zookeeper
+    extra_opts: [--strip-components=1]
+
+- name: Add config for zookeeper
+  copy:
+    src: zoo.cfg
+    dest: /opt/zookeeper/conf/zoo.cfg
+    owner: zookeeper
+    group: zookeeper
+
+- name: Add dymamic config for zookeeper
+  copy:
+    src: zoo.cfg.dynamic
+    dest: /opt/zookeeper/conf/zoo.cfg.dynamic
+    owner: zookeeper
+    group: zookeeper
+
+- name: Add myid for zookeeper
+  template:
+    src: "myid.j2"
+    dest: /opt/zookeeper/data/myid
+    owner: zookeeper
+    group: zookeeper
+    mode: '0644'
+
+- name: Add IP address of all hosts to all hosts
+  lineinfile:
+    dest: /etc/hosts
+    regexp: '.*{{ item }}$'
+    line: "{{ hostvars[item].ansible_host }} {{item}}"
+    state: present
+  when: hostvars[item].ansible_host is defined
+  with_items: "{{ groups.all }}"
+
+- name: Add unit for zookeeper
+  copy:
+    src: zookeeper.service
+    dest: /etc/systemd/system/zookeeper.service
+    owner: root
+    group: root
+  notify: reload zookeeper

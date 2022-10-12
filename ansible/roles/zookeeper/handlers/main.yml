@@ -1,0 +1,8 @@
+---
+- name: reload zookeeper
+  systemd:
+    name: zookeeper
+    daemon_reload: yes
+    enabled: yes
+    state: reloaded
+  ignore_errors: "{{ ansible_check_mode }}"

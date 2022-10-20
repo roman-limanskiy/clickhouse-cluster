@@ -66,11 +66,12 @@
     group: zookeeper
 
 - name: Add dymamic config for zookeeper
-  copy:
-    src: zoo.cfg.dynamic
+  template:
+    src: "zoo.cfg.dynamic.j2"
     dest: /opt/zookeeper/conf/zoo.cfg.dynamic
     owner: zookeeper
     group: zookeeper
+    mode: '0644'
 
 - name: Add myid for zookeeper
   template:
